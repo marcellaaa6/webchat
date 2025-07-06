@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web Chat</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    #messages { width: 300px; margin: 10px auto; border: 1px solid #ddd; padding: 10px; height: 200px; overflow-y: scroll; }
+    #form { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Login ke Web Chat</h2>
+  <form id="loginForm" method="POST" action="/login">
+    <input id="username" name="username" type="text" placeholder="Masukkan Nama" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <h3>Daftar Pengguna Online</h3>
+  <ul id="usersOnline"></ul>
+
+  <div id="chatBox" style="display:none;">
+    <h2>Web Chat</h2>
+    <div id="messages"></div>
+    <form id="form">
+      <input id="message" type="text" autocomplete="off" required />
+      <button type="submit">Kirim</button>
+    </form>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <script>
+    const username = localStorage.getItem("username");
+
+    if (username) {
+      document.getElementById("chatBox").style.display = "block";
+      document.getElementById("loginForm").style.display = "none";
+    }
+
+    const socket = io({
+      auth: { username: username }
+    });
+
+    socket.on("chat message", function(msg) {
+      let item = document.createElement("p");
+      item.textContent = msg;
+      document.getElementById("messages").appendChild(item);
+    });
+
+    socket.on("user list", function(users) {
+      document.getElementById("usersOnline").innerHTML = users.map(u => `<li>${u}</li>`).join("");
+    });
+
+    document.getElementById("form").addEventListener("submit", function(event) {
+      event.preventDefault();
+      let msg = document.getElementById("message").value;
+      socket.emit("chat message", msg);
+      document.getElementById("message").value = "";
+    });
+
+    document.getElementById("loginForm").addEventListener("submit", function() {
+      localStorage.setItem("username", document.getElementById("username").value);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", function () {
+    localStorage.removeItem("username"); // Hapus username di client
+    window.location.href = "/logout";    // Redirect ke server logout
+  });
+  </script>
+</body>
+</html>
